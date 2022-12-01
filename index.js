@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -51,7 +51,27 @@ async function run() {
             res.send(result)
         })
 
-        app.post("/racipes", async (req, res) => {
+        app.get("/cakes", async (req, res) => {
+            const httpQuery = parseInt(req.query.limit)
+            const query = {};
+
+            if (httpQuery) {
+                const result = await racipesCollection.find(query, { limit: httpQuery }).toArray();
+                return res.send(result);
+            }
+
+            const result = await racipesCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        app.get("/cake/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await racipesCollection.findOne(query);
+            res.send(result)
+        })
+
+        app.post("/cakes", async (req, res) => {
             const racipe = req.body
             const result = await racipesCollection.insertOne(racipe);
             res.send(result)
