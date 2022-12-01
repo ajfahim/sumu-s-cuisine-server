@@ -35,7 +35,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
     try {
-        const serviceCollection = client.db('sumuscuisine').collection('services');
+        const racipesCollection = client.db('sumuscuisine').collection('racipes');
         const usersCollection = client.db('sumuscuisine').collection('users')
 
         app.post("/users", async (req, res) => {
@@ -51,12 +51,18 @@ async function run() {
             res.send(result)
         })
 
+        app.post("/racipes", async (req, res) => {
+            const racipe = req.body
+            const result = await racipesCollection.insertOne(racipe);
+            res.send(result)
+        })
+
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
                 return res.send({ accessToken: token });
             }
             res.status(403).send({ accessToken: '' })
