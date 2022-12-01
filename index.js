@@ -36,7 +36,8 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const racipesCollection = client.db('sumuscuisine').collection('racipes');
-        const usersCollection = client.db('sumuscuisine').collection('users')
+        const usersCollection = client.db('sumuscuisine').collection('users');
+        const reviewsCollection = client.db('sumuscuisine').collection('reviews');
 
         app.post("/users", async (req, res) => {
             const user = req.body;
@@ -71,14 +72,28 @@ async function run() {
             res.send(result)
         })
 
-        app.post("/cakes", async (req, res) => {
+        app.post("/cakes", verifyJWT, async (req, res) => {
             const racipe = req.body
             const result = await racipesCollection.insertOne(racipe);
             res.send(result)
         })
 
+        app.get("/reviews/cake/:id", async (req, res) => {
+            const cakeId = req.params.id;
+            const query = { cake: cakeId };
+            const result = await reviewsCollection.find(query).sort({ createdAt: -1 }).toArray();
+            res.send(result)
+        })
+
+        app.post("/reviews", verifyJWT, async (req, res) => {
+            const review = req.body;
+            const result = await reviewsCollection.insertOne(review);
+            res.send(result)
+        })
+
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
+            console.log(email)
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             if (user) {
