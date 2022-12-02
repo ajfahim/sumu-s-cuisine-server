@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { query } = require('express');
 require('dotenv').config();
 
 const app = express();
@@ -85,10 +86,36 @@ async function run() {
             res.send(result)
         })
 
+        app.get("/reviews/user/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { 'createdBy.email': email };
+            const result = await reviewsCollection.find(query).sort({ createdAt: -1 }).toArray();
+            res.send(result)
+        })
+
         app.post("/reviews", verifyJWT, async (req, res) => {
             const review = req.body;
             const result = await reviewsCollection.insertOne(review);
             res.send(result)
+        })
+
+        app.put("/reviews/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const review = req.body
+            const query = { _id: ObjectId(id) };
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: review
+            }
+            const result = await reviewsCollection.updateOne(query, updatedDoc, options)
+            res.send(result)
+        })
+
+        app.delete("/reviews/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await reviewsCollection.deleteOne(query);
+            return res.send(result)
         })
 
         app.get('/jwt', async (req, res) => {
@@ -97,7 +124,7 @@ async function run() {
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET)
                 return res.send({ accessToken: token });
             }
             res.status(403).send({ accessToken: '' })
